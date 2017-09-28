@@ -1,13 +1,15 @@
 import math
 import operator
-import numpy as np
-import importlib.machinery
-from random import shuffle
+import importlib.util
+import random
 import csv
 
-loader = importlib.machinery.SourceFileLoader("decision_tree",
-                                              "../decision tree/DecisionTree.py")
-dt = loader.load_module('decision_tree')
+spec = importlib.util.spec_from_file_location("decision_tree", "../decision tree/DecisionTree.py")
+dt = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(dt)
+# loader = importlib.machinery.SourceFileLoader("decision_tree",
+#                                               "../decision tree/DecisionTree.py")
+# dt = loader.exec_module('decision_tree')
 
 
 def increment_counter(dictionary, key, value=1):
@@ -31,7 +33,8 @@ class AdaBoostEnsemble:
 
         self.weights = [1.0/len(data_points) for _ in range(len(data_points))]
 
-        for _ in range(ensemble_size):
+        for index in range(ensemble_size):
+            print("Trained learner", index)
             self.__add_weak_learner(data_points, subset_size, trained_learner,
                                     evaluate)
 
@@ -45,8 +48,10 @@ class AdaBoostEnsemble:
         return prediction
 
     def __training_subset(self, data_points, size):
-        subset_indices = np.random.choice(len(data_points), size,
-                                          p=self.weights)
+        subset_indices = random.choices(range(len(data_points)),
+                                        weights=self.weights, k=size)
+        # subset_indices = np.random.choice(len(data_points), size,
+        #                                   p=self.weights)
         return [data_points[index] for index in subset_indices]
 
     def __error(self, prediction_results):
@@ -66,7 +71,7 @@ class AdaBoostEnsemble:
 
     def __update_weights(self, prediction_results, correction):
         for index, prediction_correct in enumerate(prediction_results):
-            if not prediction_correct:
+            if prediction_correct:
                 self.weights[index] *= correction
 
         normalisation_const = sum(self.weights)
@@ -74,16 +79,18 @@ class AdaBoostEnsemble:
             self.weights[index] /= normalisation_const
 
     def __add_weak_learner(self, data_points, subset_size, trained_learner,
-                         evaluate):
+                           evaluate):
         subset = self.__training_subset(data_points, subset_size)
         weak_learner = trained_learner(subset)
         prediction_results = [evaluate(weak_learner, point) == point[-1]
                               for point in data_points]
 
+        # print(prediction_results)
         error = self.__error(prediction_results)
         if error > 0.5:
             print("Training unsuccessful")
             return
+        print(error)
 
         correction = self.__correction(error)
         self.__update_weights(prediction_results, correction)
@@ -101,7 +108,7 @@ def parse(s):
 
 def create_learner(subset):
     weak_lerner = dt.ClassificationTree()
-    weak_lerner.build(subset, 1)
+    weak_lerner.build(subset, 3)
     return weak_lerner
 
 
@@ -109,18 +116,19 @@ def wl_evaluate(wl, input):
     return wl.evaluate(input)
 
 
-with open('../data sets/IrisDataSet.csv') as fd:
+with open('../data sets/LetterDataSet.csv') as fd:
     data = [tuple([parse(x) for x in line]) for line in csv.reader(fd)]
 
-shuffle(data)
+random.shuffle(data)
 
-test_set_length = 130
-test_set = data[test_set_length:]
-training_set = data[:test_set_length]
+training_set_length = 15000
+training_set = data[:training_set_length]
+test_set = data[training_set_length:]
 
 ensemble = AdaBoostEnsemble()
-ensemble.train(training_set, test_set_length, 10, create_learner, wl_evaluate)
+ensemble.train(training_set, training_set_length, 80, create_learner, wl_evaluate)
 
+print(ensemble.learner_weights)
 correct_count = 0
 for point in test_set:
     input = point[0:-1]
@@ -130,3 +138,25 @@ for point in test_set:
         correct_count += 1
 
 print("Accuracy:", str(correct_count / len(test_set)))
+
+# with open('../data sets/IrisDataSet.csv') as fd:
+#     data = [tuple([parse(x) for x in line]) for line in csv.reader(fd)]
+#
+# random.shuffle(data)
+#
+# test_set_length = 130
+# test_set = data[test_set_length:]
+# training_set = data[:test_set_length]
+#
+# ensemble = AdaBoostEnsemble()
+# ensemble.train(training_set, test_set_length, 30, create_learner, wl_evaluate)
+#
+# correct_count = 0
+# for point in test_set:
+#     input = point[0:-1]
+#     output = point[-1]
+#     prediction = ensemble.evaluate(input, wl_evaluate)
+#     if prediction == output:
+#         correct_count += 1
+#
+# print("Accuracy:", str(correct_count / len(test_set)))
