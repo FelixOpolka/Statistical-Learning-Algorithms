@@ -34,7 +34,7 @@ class AdaBoostEnsemble:
         self.weights = [1.0/len(data_points) for _ in range(len(data_points))]
 
         for index in range(ensemble_size):
-            print("Trained learner", index)
+            # print("Trained learner", index)
             self.__add_weak_learner(data_points, subset_size, trained_learner,
                                     evaluate)
 
@@ -90,7 +90,7 @@ class AdaBoostEnsemble:
         if error > 0.5:
             print("Training unsuccessful")
             return
-        print(error)
+        # print(error)
 
         correction = self.__correction(error)
         self.__update_weights(prediction_results, correction)
@@ -115,29 +115,32 @@ def create_learner(subset):
 def wl_evaluate(wl, input):
     return wl.evaluate(input)
 
+#
+# with open('../data sets/LetterDataSet.csv') as fd:
+#     data = [tuple([parse(x) for x in line]) for line in csv.reader(fd)]
+#
+# random.shuffle(data)
+#
+# training_set_length = 15000
+# training_set = data[:training_set_length]
+# test_set = data[training_set_length:]
+#
+# ensemble = AdaBoostEnsemble()
+# ensemble.train(training_set, training_set_length, 80, create_learner, wl_evaluate)
+#
+# print(ensemble.learner_weights)
+# correct_count = 0
+# for point in test_set:
+#     input = point[0:-1]
+#     output = point[-1]
+#     prediction = ensemble.evaluate(input, wl_evaluate)
+#     if prediction == output:
+#         correct_count += 1
+#
+# print("Accuracy:", str(correct_count / len(test_set)))
 
-with open('../data sets/LetterDataSet.csv') as fd:
-    data = [tuple([parse(x) for x in line]) for line in csv.reader(fd)]
 
-random.shuffle(data)
 
-training_set_length = 15000
-training_set = data[:training_set_length]
-test_set = data[training_set_length:]
-
-ensemble = AdaBoostEnsemble()
-ensemble.train(training_set, training_set_length, 80, create_learner, wl_evaluate)
-
-print(ensemble.learner_weights)
-correct_count = 0
-for point in test_set:
-    input = point[0:-1]
-    output = point[-1]
-    prediction = ensemble.evaluate(input, wl_evaluate)
-    if prediction == output:
-        correct_count += 1
-
-print("Accuracy:", str(correct_count / len(test_set)))
 
 # with open('../data sets/IrisDataSet.csv') as fd:
 #     data = [tuple([parse(x) for x in line]) for line in csv.reader(fd)]
